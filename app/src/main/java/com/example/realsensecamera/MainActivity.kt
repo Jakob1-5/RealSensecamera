@@ -7,10 +7,13 @@ import android.os.Handler
 import android.util.Log
 import android.view.View
 import android.widget.ImageView
-import android.widget.TextView
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import kotlinx.android.synthetic.main.activity_main.*
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
     private val TAG = "MainActivity"
@@ -44,7 +47,6 @@ class MainActivity : AppCompatActivity() {
         imgViewFishEye.visibility = ImageView.GONE
         imgViewDepth.visibility = ImageView.GONE
 
-        // Onclicklisteners
         var camViewState = 0
         btnCycleCamView.setOnClickListener {
             Log.d(TAG, "CamCycleBtn clicked")
@@ -68,6 +70,13 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
+        btnCaptureFrame.setOnClickListener {
+            Log.d(TAG, "Img capture")
+            saveBMP(colorImgBuffer.value, "colorImg")
+            saveBMP(fishEyeImgBuffer.value, "fishEyeImg")
+            saveBMP(depthImgBuffer.value, "depthImg")
+        }
     }
 
     override fun onResume() {
@@ -78,5 +87,44 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
     }
 
+    private var instanceCounter = 1
+    private fun saveBMP(bitmap: Bitmap?, name: String) {
+        if (bitmap == null) {return}
+        val bmp = bitmap.copy(bitmap.config,false)
+        try {
+            var fileName = name +
+                    if(instanceCounter>1) {"(${String.format("%03d",instanceCounter)})"} else {""} +
+                    ".png"
+
+            val fOut: FileOutputStream?
+            val dir = application.getExternalFilesDir("Images")
+            var file = File(dir, fileName)
+            while (!file.createNewFile()) {
+                fileName = "${name}(${String.format("%03d",instanceCounter)}).png"
+                file = File(dir, fileName)
+                ++instanceCounter
+            }
+            fOut = FileOutputStream(file)
+
+            bmp.compress(Bitmap.CompressFormat.PNG, 100, fOut)
+            fOut.flush()
+            fOut.close()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+
+//        var numberOfImages = 1
+//        val file = File(application.getExternalFilesDir("Images"), "color$numberOfImages.png")
+//        ++numberOfImages
+//        try  {
+////                file.createNewFile()
+//            val out = FileOutputStream(file)
+//            colorImgBuffer.value!!.compress(Bitmap.CompressFormat.PNG, 100, out)
+////                out.flush()
+////                out.close()
+//        } catch (e: IOException) {
+//            e.printStackTrace()
+//        }
+    }
 
 }

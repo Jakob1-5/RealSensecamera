@@ -4,4 +4,6 @@
     <string name="title_activity_fullscreen">FullscreenActivity</string>
     <string name="dummy_content">DUMMY\nCONTENT</string>
     <string name="cycleView">Cycle views</string>
+    <string name="viewFinderDescription">View finder</string>
+    <string name="btnCaptureFrame">Take picture</string>
 </resources>
