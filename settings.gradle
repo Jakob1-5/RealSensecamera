@@ -1,0 +1,2 @@
+rootProject.name='RealSense camera'
+include ':app'
