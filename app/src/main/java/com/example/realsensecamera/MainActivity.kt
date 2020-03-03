@@ -1,5 +1,16 @@
 package com.example.realsensecamera
 
+/**
+ * The images are stored on the Loomo in
+ * /storage/sdcard0/Android/data/com.example.realsensecamera/files/Images
+ *
+ * To access them:
+ * Connect to the Loomo,
+ * Open 'Device file explorer' (e.g. by double pressing shift and search for 'Device file explorer')
+ * Navigate to the above mentioned directory.
+ * Select all the images -> right click -> save as -> choose dir on the host computer to save the images in
+ */
+
 import android.graphics.Bitmap
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
