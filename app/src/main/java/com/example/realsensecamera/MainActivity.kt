@@ -10,10 +10,11 @@ import android.widget.ImageView
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.util.*
 
 class MainActivity : AppCompatActivity() {
     private val TAG = "MainActivity"
@@ -87,44 +88,66 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
     }
 
-    private var instanceCounter = 1
     private fun saveBMP(bitmap: Bitmap?, name: String) {
-        if (bitmap == null) {return}
-        val bmp = bitmap.copy(bitmap.config,false)
-        try {
-            var fileName = name +
-                    if(instanceCounter>1) {"(${String.format("%03d",instanceCounter)})"} else {""} +
-                    ".png"
-
-            val fOut: FileOutputStream?
-            val dir = application.getExternalFilesDir("Images")
-            var file = File(dir, fileName)
-            while (!file.createNewFile()) {
-                fileName = "${name}(${String.format("%03d",instanceCounter)}).png"
-                file = File(dir, fileName)
-                ++instanceCounter
-            }
-            fOut = FileOutputStream(file)
-
-            bmp.compress(Bitmap.CompressFormat.PNG, 100, fOut)
-            fOut.flush()
-            fOut.close()
-        } catch (e: IOException) {
-            e.printStackTrace()
+        if (bitmap == null) {
+            return
         }
 
-//        var numberOfImages = 1
-//        val file = File(application.getExternalFilesDir("Images"), "color$numberOfImages.png")
-//        ++numberOfImages
-//        try  {
-////                file.createNewFile()
-//            val out = FileOutputStream(file)
-//            colorImgBuffer.value!!.compress(Bitmap.CompressFormat.PNG, 100, out)
-////                out.flush()
-////                out.close()
-//        } catch (e: IOException) {
-//            e.printStackTrace()
-//        }
+        GlobalScope.launch {
+            var instanceCounter = 1
+
+            val bmp = if (bitmap.config == Bitmap.Config.ALPHA_8) {
+                bitmap.copy(Bitmap.Config.ARGB_8888, false)
+            } else {
+                bitmap.copy(bitmap.config, false)
+            }
+    //        val bmp = bitmap.copy(Bitmap.Config.ARGB_8888,false)
+
+            try {
+                var fileName = "$name.png"
+
+                val fOut: FileOutputStream?
+                val dir = application.getExternalFilesDir("Images")
+                var file = File(dir, fileName)
+                while (!file.createNewFile()) {
+                    ++instanceCounter
+                    fileName = "${name}_${String.format("%03d", instanceCounter)}.png"
+                    file = File(dir, fileName)
+                }
+                fOut = FileOutputStream(file)
+
+                bmp.compress(Bitmap.CompressFormat.PNG, 100, fOut)
+                fOut.flush()
+                fOut.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
     }
 
+    private fun makeAlphaCompressible(bitmap: Bitmap): Bitmap {
+        val bmp = bitmap.copy(Bitmap.Config.ARGB_8888, false)
+        val width = bmp.width
+        val height = bmp.height
+
+        val alphaArray = IntArray(width * height)
+//        bmp.getPixels(alphaArray, 0, width, 0, 0, width, height)
+
+
+//        val greyScaleArray = IntArray(width * height)
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+//                greyScaleArray[y * width + x] = (alphaArray[y * width + x] shl 24) and 0xff000000.toInt()
+                alphaArray[y * width + x] = bmp.getPixel(x, y)
+            }
+        }
+//        Log.d("pxl", bmp.getPixel(320, 240).toString())
+//        return Bitmap.createBitmap(greyScaleArray, 0, width, width, height, Bitmap.Config.ARGB_8888)
+        return Bitmap.createBitmap(alphaArray, 0, width, width, height, Bitmap.Config.ARGB_8888)
+    }
+
+//    private fun alpha2Grey(bitmap: Bitmap): Bitmap {
+//        val bmp = bitmap.copy(bitmap.config, false).extractAlpha()
+//
+//    }
 }
