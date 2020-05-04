@@ -26,6 +26,8 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.nio.Buffer
+import java.nio.ByteBuffer
 
 class MainActivity : AppCompatActivity() {
     private val TAG = "MainActivity"
@@ -87,7 +89,7 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "Img capture")
             saveBMP(colorImgBuffer.value, "colorImg")
             saveBMP(fishEyeImgBuffer.value, "fishEyeImg")
-            saveBMP(depthImgBuffer.value, "depthImg")
+            saveDepth(depthImgBuffer.value, "depthImg")
         }
     }
 
@@ -97,6 +99,39 @@ class MainActivity : AppCompatActivity() {
         mRealSense.startFishEyeCamera(thisThreadHandler, fishEyeImgBuffer)
         mRealSense.startDepthCamera(thisThreadHandler, depthImgBuffer)
         super.onResume()
+    }
+
+    private fun saveDepth(bitmap: Bitmap?, name: String) {
+        if (bitmap == null) {
+            return
+        }
+        GlobalScope.launch {
+            var instanceCounter = 1
+
+            try {
+                var fileName = "$name.png"
+
+                val fOut: FileOutputStream?
+                val dir = application.getExternalFilesDir("Images")
+                var file = File(dir, fileName)
+                while (!file.createNewFile()) {
+                    ++instanceCounter
+                    fileName = "${name}_${String.format("%03d", instanceCounter)}.depthimg"
+                    file = File(dir, fileName)
+                }
+
+                file.appendBytes(bitmap.toByteArray())
+
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+    }
+    private fun Bitmap.toByteArray() : ByteArray {
+        val buf = ByteBuffer.allocate(this.byteCount)
+        this.copyPixelsToBuffer(buf)
+        buf.rewind()
+        return ByteArray(this.byteCount) { buf.get()}
     }
 
     private fun saveBMP(bitmap: Bitmap?, name: String) {
