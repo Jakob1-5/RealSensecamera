@@ -20,6 +20,7 @@ import android.view.View
 import android.widget.ImageView
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
+import com.example.realsensecamera.LoomoSensor.getAllSensors
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -64,26 +65,48 @@ class MainActivity : AppCompatActivity() {
         var camViewState = 0
         btnCycleCamView.setOnClickListener {
             Log.d(TAG, "CamCycleBtn clicked")
+            if (camViewState == 0) {
+                GlobalScope.launch {
+                    var prevTime = System.currentTimeMillis()
+                    while (true) {
+                        if ((System.currentTimeMillis() - prevTime) > 10) {
+                            prevTime = System.currentTimeMillis()
+                            val sensors = getAllSensors()
+                            runOnUiThread {
+                                textView1.text =
+                                    "Pose2D: (${sensors.pose2D.x}, ${sensors.pose2D.y}, ${sensors.pose2D.theta})\nVel: ${sensors.pose2D.linearVelocity} m/s, ${sensors.pose2D.angularVelocity} rad/s"
+                                textView2.text =
+                                    "Left tick: ${sensors.baseTick.left}, right tick: ${sensors.baseTick.right}"
+                                textView3.text =
+                                    "IR_L: ${sensors.surroundings.IR_Left}, Ultrasound: ${sensors.surroundings.UltraSonic}, IR_R: ${sensors.surroundings.IR_Right}"
+                            }
+                        }
+                    }
+                }
+            }
+
             ++camViewState
             when (camViewState) {
-                1 -> {
+                2 -> {
                     imgViewColor.visibility = ImageView.GONE
                     imgViewFishEye.visibility = ImageView.GONE
                     imgViewDepth.visibility = ImageView.VISIBLE
                 }
-                2 -> {
+                3 -> {
                     imgViewColor.visibility = ImageView.VISIBLE
                     imgViewFishEye.visibility = ImageView.GONE
                     imgViewDepth.visibility = ImageView.GONE
                 }
                 else -> {
-                    camViewState = 0
+                    camViewState = 1
                     imgViewColor.visibility = ImageView.GONE
                     imgViewFishEye.visibility = ImageView.VISIBLE
                     imgViewDepth.visibility = ImageView.GONE
                 }
             }
         }
+
+
 
         btnCaptureFrame.setOnClickListener {
             Log.d(TAG, "Img capture")
@@ -94,6 +117,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onResume() {
+        LoomoSensor.bind(this)
         mRealSense.bind(this)
         mRealSense.startColorCamera(thisThreadHandler, colorImgBuffer)
         mRealSense.startFishEyeCamera(thisThreadHandler, fishEyeImgBuffer)
